@@ -14,6 +14,32 @@ A modern inventory management web application built with **.NET MAUI Blazor Hybr
 - **Stock Adjustment** — Add or remove stock with reason tracking
 - **SQLite Database** — Local persistent storage with seed data
 - **Dark Theme** — Sleek black/red UI with gradient cards and glow effects
+- ## 🎨 UI Features
+
+- **Croell-inspired theme** — White navbar, red accents, dark content areas
+- **Global search** — Real-time product search from any page with dropdown results
+- **Interactive charts** — Bar chart with hover effects, donut chart with segment highlighting
+- **KPI card navigation** — Click cards to navigate to filtered inventory views
+- **Background images** — Contextual images blended into KPI cards
+- **Custom SVG logo** — Black/red cube with bar chart icon
+- **Responsive layout** — Full-width cards, sticky navbar
+
+## 📅 Changelog
+
+### v1.1 (May 19, 2026)
+- Added global search bar with product dropdown
+- Redesigned theme to Croell-style white/red/black
+- Added hover effects on donut chart segments
+- KPI cards now clickable with navigation
+- Background images on dashboard cards
+- Custom black/red SVG logo
+- Improved badge readability in inventory
+
+### v1.0 (May 18, 2026)
+- Initial release
+- Full inventory management with SQLite
+- Dashboard, Inventory, Orders, Suppliers, Analytics pages
+- Dark theme with red accents
 
 ## 🛠 Tech Stack
 
