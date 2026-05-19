@@ -16,7 +16,7 @@ A modern inventory management web application built with **.NET MAUI Blazor Hybr
 - **Dark Theme** — Sleek black/red UI with gradient cards and glow effects
 - ## 🎨 UI Features
 
-- **Croell-inspired theme** — White navbar, red accents, dark content areas
+- **Dark and Red theme** — White navbar, red accents, dark content areas
 - **Global search** — Real-time product search from any page with dropdown results
 - **Interactive charts** — Bar chart with hover effects, donut chart with segment highlighting
 - **KPI card navigation** — Click cards to navigate to filtered inventory views
