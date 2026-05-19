@@ -1,0 +1,141 @@
+﻿@page "/inventory"
+@rendermode InteractiveServer
+@inject DatabaseService Db
+@inject NavigationManager Nav
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">STOCK</div>
+            <div class="page-title">Inventory</div>
+        </div>
+        <a class="btn btn-primary" href="/product/add">+ Add</a>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" placeholder="Search by name or SKU..." @oninput="OnSearch" />
+    </div>
+
+    <div class="sort-pills">
+        <button class="pill @(_sort == "Name" ? "active" : "")" @onclick='() => SetSort("Name")'>Name</button>
+        <button class="pill @(_sort == "Stock" ? "active" : "")" @onclick='() => SetSort("Stock")'>Stock</button>
+        <button class="pill @(_sort == "Value" ? "active" : "")" @onclick='() => SetSort("Value")'>Value</button>
+        <button class="pill @(_sort == "Low Stock" ? "active" : "")" @onclick='() => SetSort("Low Stock")'>Low Stock</button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="loading">Loading...</div>
+    }
+    else if (!_products.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <div class="empty-title">No products found</div>
+            <div class="empty-sub">Try a different search or add a new product</div>
+        </div>
+    }
+    else
+    {
+        @foreach (var p in _products)
+        {
+            <div class="inv-card">
+                <div class="inv-card-left">
+                    <div class="inv-card-name">@p.Name</div>
+                    <div class="inv-card-sku">@p.SKU</div>
+                    <div class="inv-card-pills">
+                        <span class="badge-qty">@p.Quantity in stock</span>
+                        <span class="badge @GetBadge(p)">@p.StockStatus</span>
+                    </div>
+                </div>
+                <div class="inv-card-right">
+                    <div class="inv-card-price">@p.UnitPrice.ToString("C")</div>
+                    <div class="inv-card-actions">
+                        <button class="btn-icon" title="Adjust Stock"
+                                @onclick='() => Nav.NavigateTo("/stock-adjust/" + p.Id)'>
+                            ±
+                        </button>
+                        <button class="btn-icon" title="Edit"
+                                @onclick='() => Nav.NavigateTo("/product/edit/" + p.Id)'>
+                            ✏️
+                        </button>
+                        <button class="btn-icon danger" title="Delete"
+                                @onclick="() => DeleteAsync(p)">
+                            🗑
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "filter")]
+    public string? Filter { get; set; }
+
+    private bool _loading = true;
+    private string _search = "";
+    private string _sort = "Name";
+    private List<Product> _all = new();
+    private List<Product> _products = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        if (Filter == "low")
+        {
+            _sort = "Low Stock";
+            ApplySort();
+        }
+        else if (Filter == "out")
+        {
+            _products = _all.Where(p => p.Quantity == 0).ToList();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _all = await Db.GetProductsAsync();
+        ApplySort();
+        _loading = false;
+    }
+
+    private async Task OnSearch(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(_search)) { ApplySort(); return; }
+        _products = await Db.SearchProductsAsync(_search);
+    }
+
+    private void SetSort(string sort)
+    {
+        _sort = sort;
+        ApplySort();
+    }
+
+    private void ApplySort()
+    {
+        _products = _sort switch
+        {
+            "Stock" => _all.OrderBy(p => p.Quantity).ToList(),
+            "Value" => _all.OrderByDescending(p => p.TotalValue).ToList(),
+            "Low Stock" => _all.Where(p => p.IsLowStock).OrderBy(p => p.Quantity).ToList(),
+            _ => _all.OrderBy(p => p.Name).ToList()
+        };
+    }
+
+    private async Task DeleteAsync(Product p)
+    {
+        await Db.DeleteProductAsync(p);
+        await LoadAsync();
+    }
+
+    private string GetBadge(Product p) => p.StockStatus switch
+    {
+        "Out of Stock" => "badge-red",
+        "Low Stock" => "badge-warn",
+        _ => "badge-green"
+    };
+}

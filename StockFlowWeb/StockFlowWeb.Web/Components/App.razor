@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <script>
+            document.documentElement.setAttribute('data-theme', 'dark');
+    </script>
+    <link rel="stylesheet" href="_content/StockFlowWeb.Shared/app.css" />
+    <link rel="icon" type="image/png" href="_content/StockFlowWeb.Shared/favicon.png" />
+    <HeadOutlet />
+</head>
+<body>
+    <StockFlowWeb.Web.Components.Routes />
+    <script src="_framework/blazor.web.js"></script>
+    <script>
+        document.addEventListener('mouseover', function (e) {
+        var seg = e.target.closest('.donut-segment');
+        if (seg) {
+        var cls = seg.getAttribute('class') || '';
+        var match = cls.match(/donut-seg-(\d+)/);
+        if (match) {
+        seg.setAttribute('stroke-width', '50');
+        var items = document.querySelectorAll('.donut-item');
+        if (items[match[1]]) items[match[1]].style.background = 'rgba(255,255,255,0.08)';
+        }
+        }
+        });
+        document.addEventListener('mouseout', function (e) {
+        var seg = e.target.closest('.donut-segment');
+        if (seg) {
+        var cls = seg.getAttribute('class') || '';
+        var match = cls.match(/donut-seg-(\d+)/);
+        if (match) {
+        seg.setAttribute('stroke-width', '36');
+        var items = document.querySelectorAll('.donut-item');
+        if (items[match[1]]) items[match[1]].style.background = '';
+        }
+        }
+        });
+    </script>
+   
+</body>
+</html>

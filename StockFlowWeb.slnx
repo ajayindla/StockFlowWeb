@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="StockFlowWeb/StockFlowWeb.Shared/StockFlowWeb.Shared.csproj" />
+  <Project Path="StockFlowWeb/StockFlowWeb.Web/StockFlowWeb.Web.csproj" />
+  <Project Path="StockFlowWeb/StockFlowWeb/StockFlowWeb.csproj" />
+</Solution>

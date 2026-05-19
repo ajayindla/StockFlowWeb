@@ -1,0 +1,31 @@
+﻿@using StockFlowWeb.Shared.Services
+
+<nav class="topnav">
+    <a class="brand" href="/">
+        <svg width="48" height="48" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Cube top face -->
+            <polygon points="18,4 30,11 18,18 6,11" fill="#7C82E8" />
+            <!-- Cube left face -->
+            <polygon points="6,11 18,18 18,30 6,23" fill="#5558CC" />
+            <!-- Cube right face -->
+            <polygon points="30,11 18,18 18,30 30,23" fill="#4547A8" />
+            <!-- Green bars -->
+            <rect x="11" y="21" width="3" height="7" rx="1" fill="#06d6a0" />
+            <rect x="15" y="18" width="3" height="10" rx="1" fill="#06d6a0" />
+            <rect x="19" y="15" width="3" height="13" rx="1" fill="#06d6a0" />
+            <rect x="23" y="19" width="3" height="9" rx="1" fill="#06d6a0" />
+        </svg>
+        <div>
+            <div class="brand-name">StockFlow</div>
+            <div class="brand-sub">Inventory Manager</div>
+        </div>
+    </a>
+
+    <div class="nav-links">
+        <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Dashboard</NavLink>
+        <NavLink class="nav-link" href="/inventory">Inventory</NavLink>
+        <NavLink class="nav-link" href="/purchase-orders">Orders</NavLink>
+        <NavLink class="nav-link" href="/suppliers">Suppliers</NavLink>
+        <NavLink class="nav-link" href="/charts">Analytics</NavLink>
+    </div>
+</nav>

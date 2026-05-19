@@ -1,0 +1,114 @@
+﻿@page "/product/add"
+@rendermode InteractiveServer
+@page "/product/edit/{Id:int}"
+@inject DatabaseService Db
+@inject NavigationManager Nav
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">@(Id > 0 ? "EDIT" : "NEW")</div>
+            <div class="page-title">@_title</div>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-outline" href="/inventory">Cancel</a>
+            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+                @(_saving ? "Saving..." : "Save Product")
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert-danger">@_error</div>
+    }
+
+    <div class="form-card">
+        <div class="form-card-header">Product Information</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>SKU</label>
+                <input type="text" @bind="_p.SKU" placeholder="e.g. ELEC-004" />
+            </div>
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" @bind="_p.Name" placeholder="e.g. Bluetooth Speaker" />
+            </div>
+            <div class="form-group form-full">
+                <label>Description</label>
+                <input type="text" @bind="_p.Description" placeholder="Brief description" />
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select @bind="_p.CategoryId">
+                    <option value="0">-- Select Category --</option>
+                    @foreach (var c in _categories)
+                    {
+                        <option value="@c.Id">@c.Icon @c.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Supplier</label>
+                <select @bind="_p.SupplierId">
+                    <option value="0">-- Select Supplier --</option>
+                    @foreach (var s in _suppliers)
+                    {
+                        <option value="@s.Id">@s.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" @bind="_p.Quantity" min="0" />
+            </div>
+            <div class="form-group">
+                <label>Unit Price ($)</label>
+                <input type="number" @bind="_p.UnitPrice" min="0" step="0.01" />
+            </div>
+            <div class="form-group">
+                <label>Reorder Point</label>
+                <input type="number" @bind="_p.ReorderPoint" min="0" />
+            </div>
+            <div class="form-group">
+                <label>Reorder Quantity</label>
+                <input type="number" @bind="_p.ReorderQty" min="0" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private string _title = "Add Product";
+    private string _error = "";
+    private bool _saving = false;
+    private Product _p = new();
+    private List<Category> _categories = new();
+    private List<Supplier> _suppliers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await Db.GetCategoriesAsync();
+        _suppliers = await Db.GetSuppliersAsync();
+        if (Id > 0)
+        {
+            _title = "Edit Product";
+            var existing = await Db.GetProductAsync(Id);
+            if (existing != null) _p = existing;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = "";
+        if (string.IsNullOrWhiteSpace(_p.Name)) { _error = "Product name is required."; return; }
+        if (string.IsNullOrWhiteSpace(_p.SKU)) { _error = "SKU is required."; return; }
+        if (_p.UnitPrice <= 0) { _error = "Unit price must be greater than 0."; return; }
+        _saving = true;
+        await Db.SaveProductAsync(_p);
+        _saving = false;
+        Nav.NavigateTo("/inventory");
+    }
+}

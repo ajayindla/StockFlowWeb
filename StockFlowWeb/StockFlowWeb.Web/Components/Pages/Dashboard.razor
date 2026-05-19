@@ -1,0 +1,116 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject DatabaseService Db
+@inject NavigationManager Nav
+
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">INVENTORY</div>
+            <div class="page-title">Dashboard</div>
+        </div>
+        <a class="btn btn-primary" href="/product/add">+ Add Product</a>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="loading">Loading...</div>
+    }
+    else
+    {
+        <div class="kpi-grid-2x2">
+            <div class="kpi-card blue" @onclick='() => Nav.NavigateTo("/inventory")' style="cursor:pointer;overflow:hidden;position:relative">
+                <div>
+                    <div class="kpi-label">PRODUCTS</div>
+                    <div class="kpi-val blue">@_stats.TotalProducts</div>
+                    <div class="kpi-sub">total items</div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1553413077-190dd305871c?w=300&q=80"
+                     style="position:absolute;right:0;top:0;height:100%;width:45%;object-fit:cover;opacity:0.15;mask-image:linear-gradient(to left, rgba(0,0,0,0.8), transparent);-webkit-mask-image:linear-gradient(to left, rgba(0,0,0,0.8), transparent)" />
+            </div>
+
+            <div class="kpi-card green" @onclick='() => Nav.NavigateTo("/inventory")' style="cursor:pointer;overflow:hidden;position:relative">
+                <div>
+                    <div class="kpi-label">VALUE</div>
+                    <div class="kpi-val green">@_stats.TotalInventoryValue.ToString("C0")</div>
+                    <div class="kpi-sub">total stock value</div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=300&q=80"
+                     style="position:absolute;right:0;top:0;height:100%;width:45%;object-fit:cover;opacity:0.15;mask-image:linear-gradient(to left, rgba(0,0,0,0.8), transparent);-webkit-mask-image:linear-gradient(to left, rgba(0,0,0,0.8), transparent)" />
+            </div>
+
+            <div class="kpi-card warn" @onclick='() => Nav.NavigateTo("/inventory?filter=low")' style="cursor:pointer;overflow:hidden;position:relative">
+                <div>
+                    <div class="kpi-label">LOW STOCK</div>
+                    <div class="kpi-val warn">@_stats.LowStockCount</div>
+                    <div class="kpi-sub">need reorder</div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=300&q=80"
+                     style="position:absolute;right:0;top:0;height:100%;width:45%;object-fit:cover;opacity:0.15;mask-image:linear-gradient(to left, rgba(0,0,0,0.8), transparent);-webkit-mask-image:linear-gradient(to left, rgba(0,0,0,0.8), transparent)" />
+            </div>
+
+            <div class="kpi-card red" @onclick='() => Nav.NavigateTo("/inventory?filter=out")' style="cursor:pointer;overflow:hidden;position:relative">
+                <div>
+                    <div class="kpi-label">OUT OF STOCK</div>
+                    <div class="kpi-val red">@_stats.OutOfStockCount</div>
+                    <div class="kpi-sub">items depleted</div>
+                </div>
+                <img src="https://images.unsplash.com/photo-1543286386-713bdd548da4?w=300&q=80"
+                     style="position:absolute;right:0;top:0;height:100%;width:45%;object-fit:cover;opacity:0.15;mask-image:linear-gradient(to left, rgba(0,0,0,0.8), transparent);-webkit-mask-image:linear-gradient(to left, rgba(0,0,0,0.8), transparent)" />
+            </div>
+        </div>
+
+        <!-- Low Stock Alerts -->
+        <div class="list-card">
+            <div class="list-card-header">
+                <span>⚠️</span>
+                <span class="list-card-title">LOW STOCK ALERTS</span>
+            </div>
+            @foreach (var p in _lowStock)
+            {
+                <div class="list-item">
+                    <div class="list-item-left">
+                        <div class="list-item-name">@p.Name</div>
+                        <div class="list-item-sub">@p.SKU</div>
+                    </div>
+                    <div class="list-item-right">
+                        <span class="list-item-qty">@p.Quantity left</span>
+                        <span class="badge @(p.Quantity == 0 ? "badge-red" : "badge-warn")">@p.StockStatus</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="list-card">
+            <div class="list-card-header">
+                <span class="list-card-title">RECENT ACTIVITY</span>
+            </div>
+            @foreach (var t in _stats.RecentTransactions)
+            {
+                <div class="activity-item">
+                    <div class="activity-badge @(t.Type == "IN" ? "in" : "out")">@t.Type</div>
+                    <div class="activity-info">
+                        <div class="activity-reason">@t.Reason</div>
+                        <div class="activity-date">@t.Date.ToString("MMM dd, yyyy")</div>
+                    </div>
+                    <div class="activity-delta @(t.Delta > 0 ? "pos" : "neg")">@t.DeltaDisplay</div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private DashboardStats _stats = new();
+    private List<Product> _lowStock = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _stats = await Db.GetDashboardStatsAsync();
+        _lowStock = await Db.GetLowStockProductsAsync();
+        _loading = false;
+    }
+}

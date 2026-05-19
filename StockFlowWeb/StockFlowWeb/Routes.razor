@@ -1,0 +1,11 @@
+﻿@using StockFlowWeb.Shared.Layout
+
+<Router AppAssembly="typeof(StockFlowWeb.Shared.Services.DatabaseService).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <p>Page not found.</p>
+    </NotFound>
+</Router>

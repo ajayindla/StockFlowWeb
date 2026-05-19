@@ -1,0 +1,100 @@
+﻿@page "/purchase-orders"
+@rendermode InteractiveServer
+@inject DatabaseService Db
+@inject NavigationManager Nav
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">PROCUREMENT</div>
+            <div class="page-title">Purchase Orders</div>
+        </div>
+        <a class="btn btn-primary" href="/add-order">+ New</a>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="loading">Loading...</div>
+    }
+    else if (!_orders.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">🛒</div>
+            <div class="empty-title">No orders yet</div>
+            <div class="empty-sub">Tap + New to create a purchase order</div>
+            <a class="btn btn-primary" href="/add-order">+ New Order</a>
+        </div>
+    }
+    else
+    {
+        <div class="tbl-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Supplier</th>
+                        <th>Status</th>
+                        <th>Order Date</th>
+                        <th>Received</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in _orders)
+                    {
+                        <tr>
+                            <td class="mono">@o.OrderNumber</td>
+                            <td>@GetSupplier(o.SupplierId)</td>
+                            <td><span class="badge @GetStatusBadge(o.Status)">@o.Status</span></td>
+                            <td class="mono">@o.OrderDate.ToString("MM/dd/yyyy")</td>
+                            <td class="mono">@(o.ReceivedDate?.ToString("MM/dd/yyyy") ?? "—")</td>
+                            <td>@o.Notes</td>
+                            <td>
+                                @if (o.Status == "Pending" || o.Status == "Ordered")
+                                {
+                                    <button class="btn btn-sm btn-success"
+                                            @onclick="() => ReceiveAsync(o)">
+                                        Receive
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private List<PurchaseOrder> _orders = new();
+    private List<Supplier> _suppliers = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _orders = await Db.GetPurchaseOrdersAsync();
+        _suppliers = await Db.GetSuppliersAsync();
+        _loading = false;
+    }
+
+    private string GetSupplier(int id) =>
+        _suppliers.FirstOrDefault(s => s.Id == id)?.Name ?? "Unknown";
+
+    private string GetStatusBadge(string status) => status switch
+    {
+        "Received" => "badge-green",
+        "Ordered" => "badge-blue",
+        _ => "badge-warn"
+    };
+
+    private async Task ReceiveAsync(PurchaseOrder o)
+    {
+        await Db.ReceivePurchaseOrderAsync(o.Id);
+        await LoadAsync();
+    }
+}

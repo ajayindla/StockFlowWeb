@@ -1,0 +1,150 @@
+﻿@page "/charts"
+@rendermode InteractiveServer
+@inject DatabaseService Db
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">INSIGHTS</div>
+            <div class="page-title">Analytics</div>
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="loading">Loading...</div>
+    }
+    else
+    {
+        <div class="charts-kpi">
+            <div class="chart-kpi">
+                <div class="chart-kpi-label">PRODUCTS</div>
+                <div class="chart-kpi-val">@_products.Count</div>
+            </div>
+            <div class="chart-kpi">
+                <div class="chart-kpi-label">VALUE</div>
+                <div class="chart-kpi-val green">@_products.Sum(p => p.TotalValue).ToString("C0")</div>
+            </div>
+            <div class="chart-kpi">
+                <div class="chart-kpi-label">LOW STOCK</div>
+                <div class="chart-kpi-val warn">@_products.Count(p => p.IsLowStock)</div>
+            </div>
+        </div>
+
+        <!-- Stock Levels Bar Chart -->
+        <div class="chart-section">
+            <div class="chart-section-title">STOCK LEVELS</div>
+            @{
+                var maxQty = _products.Any() ? _products.Max(p => p.Quantity) : 1;
+                if (maxQty == 0) maxQty = 1;
+            }
+            <div class="bar-chart">
+                @foreach (var p in _products.OrderByDescending(p => p.Quantity))
+                {
+                    var pct = (double)p.Quantity / maxQty * 100;
+                    var barClass = p.Quantity == 0 ? "red" : p.IsLowStock ? "warn" : "";
+                    <div class="bar-wrap">
+                        <div class="bar-num">@p.Quantity</div>
+                        <div class="bar @barClass hoverable" style="height:@pct.ToString("F0")%"></div>
+                        <div class="bar-name" title="@p.Name">@(p.Name.Length > 10 ? p.Name[..10] + "…" : p.Name)</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Value by Category Donut -->
+        <div class="chart-section">
+            <div class="chart-section-title">VALUE BY CATEGORY</div>
+            <div class="donut-wrap">
+                <div class="donut-container">
+                    <svg width="260" height="260" viewBox="0 0 200 200">
+                        @{
+                            var total = _catStats.Sum(c => c.Value);
+                            var colors = new[] { "#6366f1", "#06d6a0", "#f59e0b", "#ef4444", "#3b82f6" };
+                            double offset = 0;
+                            var circumference = 2 * Math.PI * 70;
+                        }
+                        <circle cx="100" cy="100" r="70" fill="none" stroke="#1c2333" stroke-width="36" />
+                        @for (int i = 0; i < _catStats.Count; i++)
+                        {
+                            var c = _catStats[i];
+                            var pct = total > 0 ? (double)c.Value / (double)total : 0;
+                            var dash = pct * circumference;
+                            var gap = circumference - dash;
+                            var rotation = offset * 360 - 90;
+                            <circle cx="100" cy="100" r="70"
+                                    fill="none"
+                                    stroke="@colors[i % colors.Length]"
+                                    stroke-width="36"
+                                    stroke-dasharray="@dash.ToString("F1") @gap.ToString("F1")"
+                                    stroke-dashoffset="@(-(offset * circumference - circumference / 4)).ToString(" F1")"
+                                    transform="rotate(@rotation.ToString("F1") 100 100)"
+                                    class="donut-segment donut-seg-@i" />
+                            offset += pct;
+                        }
+                        <text x="100" y="95" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="700" font-family="monospace">@_catStats.Sum(c => c.Value).ToString("C0")</text>
+                        <text x="100" y="112" text-anchor="middle" fill="#8b949e" font-size="9">TOTAL VALUE</text>
+                    </svg>
+                </div>
+
+                <div class="donut-legend">
+                    @for (int i = 0; i < _catStats.Count; i++)
+                    {
+                        var c = _catStats[i];
+                        var colors2 = new[] { "#6366f1", "#06d6a0", "#f59e0b", "#ef4444", "#3b82f6" };
+                        var pct = total > 0 ? (double)c.Value / (double)total * 100 : 0;
+                        <div class="donut-item">
+                            <div class="donut-dot" style="background:@colors2[i % colors2.Length]"></div>
+                            <span class="donut-name">@c.Name</span>
+                            <span class="donut-pct" style="color:@colors2[i % colors2.Length]">@pct.ToString("F1")%</span>
+                            <span class="donut-val">@c.Value.ToString("C0")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Products by Value -->
+        <div class="chart-section">
+            <div class="chart-section-title">TOP PRODUCTS BY VALUE</div>
+            @{
+                var maxVal = _products.Any() ? _products.Max(p => p.TotalValue) : 1m;
+                if (maxVal == 0) maxVal = 1;
+            }
+            @foreach (var p in _products.OrderByDescending(p => p.TotalValue).Take(5))
+            {
+                var pct = (double)(p.TotalValue / maxVal * 100);
+                <div class="top-product-row">
+                    <div class="top-product-header">
+                        <span style="color:var(--txt)">@p.Name</span>
+                        <span style="color:var(--accent2);font-family:monospace">@p.TotalValue.ToString("C")</span>
+                    </div>
+                    <div class="top-product-bar">
+                        <div class="top-product-fill" style="width:@pct.ToString("F0")%"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private List<Product> _products = new();
+    private List<(string Name, decimal Value)> _catStats = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _products = await Db.GetProductsAsync();
+        var cats = await Db.GetCategoriesAsync();
+        _catStats = cats
+            .Select(c => (
+                Name: $"{c.Icon} {c.Name}",
+                Value: _products.Where(p => p.CategoryId == c.Id).Sum(p => p.TotalValue)
+            ))
+            .Where(c => c.Value > 0)
+            .OrderByDescending(c => c.Value)
+            .ToList();
+        _loading = false;
+    }
+}

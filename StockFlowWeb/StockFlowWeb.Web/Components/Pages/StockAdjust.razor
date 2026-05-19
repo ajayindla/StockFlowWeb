@@ -1,0 +1,128 @@
+﻿@page "/stock-adjust/{Id:int}"
+@rendermode InteractiveServer
+@inject DatabaseService Db
+@inject NavigationManager Nav
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">STOCK</div>
+            <div class="page-title">Stock Adjustment</div>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-outline" href="/inventory">Cancel</a>
+            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">
+                @(_saving ? "Saving..." : "Save Adjustment")
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert-danger">@_error</div>
+    }
+
+    @if (_product != null)
+    {
+        <div class="two-col">
+            <div class="form-card" style="height:fit-content">
+                <div class="form-card-header">Product</div>
+                <div class="form-pad">
+                    <div class="info-row">
+                        <span>Name</span><strong>@_product.Name</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>SKU</span><strong class="mono">@_product.SKU</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Status</span>
+                        <span class="badge @GetBadge(_product)">@_product.StockStatus</span>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">CURRENT STOCK</div>
+                        <div class="stat-val">@_product.Quantity</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-card" style="height:fit-content">
+                <div class="form-card-header">Adjustment</div>
+                <div class="form-pad">
+                    <div class="toggle-row">
+                        <button class="toggle-btn @(_isAdd ? "active add" : "")"
+                                @onclick='() => _isAdd = true'>
+                            + Add Stock
+                        </button>
+                        <button class="toggle-btn @(!_isAdd ? "active remove" : "")"
+                                @onclick='() => _isAdd = false'>
+                            − Remove Stock
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" @bind="_qty" min="1" />
+                    </div>
+                    <div class="form-group">
+                        <label>Reason</label>
+                        <select @bind="_reason">
+                            @foreach (var r in _reasons)
+                            {
+                                <option value="@r">@r</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes (optional)</label>
+                        <input type="text" @bind="_notes" placeholder="Add notes..." />
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">NEW STOCK LEVEL</div>
+                        <div class="stat-val" style="color:var(--accent)">@NewQty</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Product? _product;
+    private bool _isAdd = true;
+    private int _qty = 1;
+    private string _reason = "Sale";
+    private string _notes = "";
+    private bool _saving = false;
+    private string _error = "";
+
+    private int NewQty => _product == null ? 0
+        : _isAdd ? _product.Quantity + _qty
+        : Math.Max(0, _product.Quantity - _qty);
+
+    private List<string> _reasons = new()
+        { "Sale", "Purchase Order", "Adjustment", "Damaged", "Returned", "Expired", "Other" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _product = await Db.GetProductAsync(Id);
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = "";
+        if (_qty <= 0) { _error = "Quantity must be greater than 0."; return; }
+        _saving = true;
+        var delta = _isAdd ? _qty : -_qty;
+        await Db.AdjustStockAsync(Id, delta, _reason, _notes);
+        _saving = false;
+        Nav.NavigateTo("/inventory");
+    }
+
+    private string GetBadge(Product p) => p.StockStatus switch
+    {
+        "Out of Stock" => "badge-red",
+        "Low Stock" => "badge-warn",
+        _ => "badge-green"
+    };
+}
