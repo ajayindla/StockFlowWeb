@@ -2,6 +2,9 @@
 
 A modern inventory management web application built with **.NET MAUI Blazor Hybrid** and **Blazor Server**, featuring a sleek dark theme with red accents.
 
+## 🌐 Live Demo
+[StockFlowWeb Live App](https://your-railway-link.up.railway.app)
+
 ![StockFlow Dashboard](https://images.unsplash.com/photo-1553413077-190dd305871c?w=1200&q=80)
 
 ## 🚀 Features
